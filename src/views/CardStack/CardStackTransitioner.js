@@ -1,7 +1,10 @@
 /* @flow */
 
 import * as React from 'react';
-import { NativeModules } from 'react-native';
+import {
+  Animated,
+  NativeModules
+} from 'react-native';
 
 import CardStack from './CardStack';
 import CardStackStyleInterpolator from './CardStackStyleInterpolator';
@@ -45,9 +48,22 @@ class CardStackTransitioner extends React.Component<Props> {
   };
 
   render() {
+    const routes = this.props.navigation.state.routes;
+    const currentScene = routes[routes.length - 1] || {};
+    const previousScene = routes[routes.length - 2] || {};
+    const splitPaneToSplitPaneNav = this.props.isMultiPaneEligible
+      && currentScene.leftSplitPaneComponent && previousScene.leftSplitPaneComponent;
+    let animation = this._configureTransition;
+    if (splitPaneToSplitPaneNav) {
+      animation = () => ({
+        timing: Animated.timing,
+        duration: 0,
+      });
+    }
+
     return (
       <Transitioner
-        configureTransition={this._configureTransition}
+        configureTransition={animation}
         navigation={this.props.navigation}
         render={this._render}
         onTransitionStart={this.props.onTransitionStart}
@@ -102,6 +118,18 @@ class CardStackTransitioner extends React.Component<Props> {
         cardStyle={cardStyle}
         transitionConfig={transitionConfig}
         {...props}
+        headerComponent={this.props.headerComponent}
+        routeActions={this.props.routeActions}
+        isIOS={this.props.isIOS}
+        isAndroid={this.props.isAndroid}
+        isMultiPaneEligible={this.props.isMultiPaneEligible}
+        statusBarSize={this.props.statusBarSize}
+        trackingActions={this.props.trackingActions}
+        hasModal={this.props.hasModal}
+        openDrawer={this.props.openDrawer}
+        handleBackAction={this.props.handleBackAction}
+        handleNavigate={this.props.handleNavigate}
+        modals={this.props.modals}
       />
     );
   };

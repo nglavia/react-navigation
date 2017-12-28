@@ -1,6 +1,7 @@
 /* @flow */
 
 import * as React from 'react';
+import _ from 'lodash';
 
 import { Animated, StyleSheet } from 'react-native';
 
@@ -21,10 +22,14 @@ type Props = {
  */
 class Card extends React.Component<Props> {
   render() {
-    const { children, pointerEvents, style } = this.props;
+    const { children, pointerEvents, style, scene } = this.props;
+    const isTopScreen = scene.isActive;
+    const modals = this.props.modals;
+    const isAccessible = (isTopScreen) && (_.size(modals) === 0 || modals === undefined);
     return (
       <Animated.View
         pointerEvents={pointerEvents}
+        importantForAccessibility={isAccessible ? 'yes' : 'no-hide-descendants'}
         ref={this.props.onComponentRef}
         style={[styles.main, style]}
       >
@@ -36,7 +41,6 @@ class Card extends React.Component<Props> {
 
 const styles = StyleSheet.create({
   main: {
-    backgroundColor: '#E9E9EF',
     bottom: 0,
     left: 0,
     position: 'absolute',
