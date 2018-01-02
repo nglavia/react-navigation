@@ -16,7 +16,7 @@ import {
 import Card from './Card';
 import NavigationActions from '../../NavigationActions';
 import addNavigationHelpers from '../../addNavigationHelpers';
-import SceneView from '../SceneView';
+import CardSceneView from '../CardSceneView';
 
 import type {
   NavigationLayout,
@@ -169,10 +169,11 @@ class CardStack extends React.Component<Props, State> {
           {
               hasSplitPaneComponent && SplitPaneComponent &&
               <View style={{ width: 300, borderRightWidth: 1, borderColor: theme.lightGrey }}>
-                <SceneView
+                <CardSceneView
                   key={`SPLIT_PANE${route.key}`}
                   routeProps={scene.route}
                   component={SplitPaneComponent}
+
                   scene={scene}
                   handleNavigate={this.props.handleNavigate}
                   handleBack={this.props.handleBackAction}
@@ -183,7 +184,7 @@ class CardStack extends React.Component<Props, State> {
               </View>
           }
           <View style={{ flex: 1 }}>
-            <SceneView
+            <CardSceneView
               {...route}
               key={scene.key}
               routeKey={route.key}
