@@ -78,12 +78,20 @@ class CardStackTransitioner extends React.Component<Props> {
     // props for the old screen
     prevTransitionProps: ?NavigationTransitionProps
   ) => {
+    let customTransitionConfig = this.props.transitionConfig;
+    if (this.props.transitionConfig !== null) {
+      const screenInterpolator = this.props.transitionConfig && this.props.transitionConfig().screenInterpolator(transitionProps);
+      // if the screen interpolator from this.props.transtionConfig is null then we want to set customTransitionConfig to null so the default will be used
+      if (screenInterpolator === null) {
+        customTransitionConfig = null;
+      }
+    }
     const isModal = this.props.mode === 'modal';
     // Copy the object so we can assign useNativeDriver below
     // (avoid Flow error, transitionSpec is of type NavigationTransitionSpec).
     const transitionSpec = {
       ...TransitionConfigs.getTransitionConfig(
-        this.props.transitionConfig,
+        customTransitionConfig,
         transitionProps,
         prevTransitionProps,
         isModal
@@ -95,7 +103,7 @@ class CardStackTransitioner extends React.Component<Props> {
       CardStackStyleInterpolator.canUseNativeDriver()
     ) {
       // Internal undocumented prop
-      transitionSpec.useNativeDriver = true;
+      transitionSpec.useNativeDriver = false;
     }
     return transitionSpec;
   };

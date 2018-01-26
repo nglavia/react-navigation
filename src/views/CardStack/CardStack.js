@@ -103,6 +103,8 @@ class CardStack extends React.Component<Props, State> {
   _renderHeader(scene: NavigationScene, headerMode: HeaderMode): ?React.Node {
     // Caribou Start
     const accessibilityOption = this.props.hasModal ? 'no-hide-descendants' : 'yes';
+    const { headerInterpolator } = this._getTransitionConfig();
+    const customHeaderInterpolator = headerInterpolator && headerInterpolator({ ...this.props, scene });
     return (
       // $FlowFixMeRN0.51.1
       <this.props.headerComponent
@@ -112,6 +114,7 @@ class CardStack extends React.Component<Props, State> {
         onNavigateBack={this.props.handleBackAction}
         scene={scene}
         mode={headerMode}
+        headerInterpolator={customHeaderInterpolator}
       />
     );
   }
@@ -204,10 +207,19 @@ class CardStack extends React.Component<Props, State> {
   }
 
   _getTransitionConfig = (isAnimateFromBottom) => {
+    const { scenes, index } = this.props;
+    let customTransitionConfig = this.props.transitionConfig;
+    if (this.props.transitionConfig !== null) {
+      const customScreenInterpolator = this.props.transitionConfig && this.props.transitionConfig().screenInterpolator({ ...this.props });
+      // if the screen interpolator from this.props.transtionConfig is null then we want to set customTransitionConfig to null so the default will be used
+      if (customScreenInterpolator === null) {
+        customTransitionConfig = null;
+      }
+    }
     const isModal = this.props.mode === 'modal';
 
     return TransitionConfigs.getTransitionConfig(
-      this.props.transitionConfig,
+      customTransitionConfig,
       /* $FlowFixMe */
       {},
       /* $FlowFixMe */
