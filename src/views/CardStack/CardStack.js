@@ -40,6 +40,7 @@ const emptyFunction = () => {};
 const theme = {
   white: '#FFFFFF',
   lightGrey: '#B7B7B7',
+  primaryBlue: '#0074B4',
 }
 
 type Props = {
@@ -165,9 +166,10 @@ class CardStack extends React.Component<Props, State> {
     const isActiveRoute = scene.isActive && !this.props.hasModal;
 
     return (
-      <View style={{ flex: 1, paddingTop, backgroundColor: theme.white }}
+      <View style={{ flex: 1, backgroundColor: theme.white }}
         testID={`Screen_${scene.route.routeName}_${isActiveRoute ? 'IsActive' : 'IsNotActive'}`}
       >
+        <View style={{ height: paddingTop, backgroundColor: theme.primaryBlue }} />
         <View style={{ flexDirection: 'row', flex: 1 }}>
           {
               hasSplitPaneComponent && SplitPaneComponent &&
