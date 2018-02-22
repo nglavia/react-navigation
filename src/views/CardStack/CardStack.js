@@ -1,6 +1,7 @@
 /* @flow */
 
 import * as React from 'react';
+import _ from 'lodash';
 
 import clamp from 'clamp';
 import {
@@ -40,6 +41,46 @@ const emptyFunction = () => {};
 const theme = {
   white: '#FFFFFF',
   lightGrey: '#B7B7B7',
+  primaryBlue: '#0074B4',
+}
+
+const FLIP_FORWARD = 'FLIP_FORWARD';
+
+const processFlipAnimation = (scene, scenes, state) => {
+  // When flipping, only render top screen when it's time to show
+  const isFlipForward = scene.route.customTransition === FLIP_FORWARD;
+
+  const isFlipFromAnimation = state.isAnimating && isFlipForward && state.isFirstHalf;
+  const isFlipToAnimation = state.isAnimating && isFlipForward && state.isSecondHalf;
+
+  let nonPurgedScenes = scenes;
+  let topVisibleScene = _.last(scenes);
+
+  let isHideTopScene = false;
+  if (isFlipForward) {
+    if (isFlipFromAnimation) {
+      // If flip from animation in progress, the top visible scene is actually the previous route
+      topVisibleScene = _.last(nonPurgedScenes.slice(0, -1));
+      isHideTopScene = true;
+    } else if (isFlipToAnimation) {
+      // Don't draw stale scenes after flip completes, ran into issue where
+      // portal blue on bottom would draw behind bottom of flip and looked
+      // weird
+      nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isStale);
+    }
+    // Never draw purged scenes, stale routes are purged once animation completes
+    // TODO actually purge these from redux instead, after animation looks good
+    nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isPurged);
+  }
+
+  return {
+    isFlipForward,
+    isFlipFromAnimation,
+    isFlipToAnimation,
+    topVisibleScene,
+    isHideTopScene,
+    nonPurgedScenes,
+  }
 }
 
 type Props = {
@@ -77,16 +118,31 @@ class CardStack extends React.Component<Props, State> {
     };
     // (this: any)._trackState = this._trackState.bind(this);
     (this: any)._hasSplitPaneComponent = this._hasSplitPaneComponent.bind(this);
+    props.progress.addListener(({ value }) => {
+      this.setState({
+        isAnimating: value !== 0 && value !== 1,
+        isFirstHalf: value < 0.5,
+        isSecondHalf: value >= 0.5
+      })
+    });
   }
 
-  componentWillReceiveProps(props: Props, nextProps: Props) {
-    if (props.statusBarSize !== this.props.statusBarSize) {
+  componentWillReceiveProps(nextProps: Props) {
+    if (nextProps.statusBarSize !== this.props.statusBarSize) {
       this.setState({
         headerHeight: (this.props.isIOS ? 45 : 41) + this.props.statusBarSize,
       });
     }
 
-    props.scenes.forEach((newScene: *) => {
+    const topScene = _.last(this.props.scenes);
+    const nextTopScene = _.last(nextProps.scenes);
+    if (topScene.key !== nextTopScene.key) {
+      this.setState({
+        isAnimating: true,
+      });
+    }
+
+    nextProps.scenes.forEach((newScene: *) => {
       if (
         this._screenDetails[newScene.key] &&
         this._screenDetails[newScene.key].state !== newScene.route
@@ -119,23 +175,52 @@ class CardStack extends React.Component<Props, State> {
   render(): React.Node {
     let floatingHeader = null;
     const headerMode = this._getHeaderMode();
+
+    const { scene, scenes, position } = this.props;
+
+    const {
+      isFlipForward,
+      isFlipFromAnimation,
+      isFlipToAnimation,
+      topVisibleScene,
+      isHideTopScene,
+      nonPurgedScenes,
+    } = processFlipAnimation(scene, scenes, this.state);
+
     if (headerMode === 'float') {
-      floatingHeader = this._renderHeader(this.props.scene, headerMode);
+      floatingHeader = this._renderHeader(topVisibleScene, headerMode);
     }
-    const { scenes } = this.props;
 
     const containerStyle = [
       styles.container,
       this._getTransitionConfig().containerStyle,
     ];
 
+    const { screenInterpolator } = this._getTransitionConfig(topVisibleScene.route.animateFromBottom);
+    let flipAnimationStyle = {};
+    if (isFlipForward) {
+      flipAnimationStyle = screenInterpolator && screenInterpolator({ ...this.props });
+    }
+
     return (
-      <View style={containerStyle}>
-        <View style={styles.scenes}>
-          {scenes.map((s: *) => this._renderCard(s))}
-        </View>
+      <Animated.View style={[containerStyle, flipAnimationStyle]}>
+          <View style={styles.scenes}>
+          {
+            nonPurgedScenes.map((s: *, idx) => {
+              const isTopScene = s.key === scene.key;
+              const isTopVisibleScene = s.key === topVisibleScene.key;
+              const shouldInvertScreen = isTopVisibleScene && isFlipFromAnimation;
+              const shouldHide = isHideTopScene && isTopScene;
+              return this._renderCard(s, {
+                shouldInvertScreen,
+                shouldHide,
+                isFlipping: isFlipFromAnimation || isFlipToAnimation,
+              })
+            })
+          }
+          </View>
         {floatingHeader}
-      </View>
+      </Animated.View>
     );
   }
 
@@ -162,9 +247,10 @@ class CardStack extends React.Component<Props, State> {
     const isActiveRoute = scene.isActive && !this.props.hasModal;
 
     return (
-      <View style={{ flex: 1, paddingTop, backgroundColor: theme.white }}
+      <View style={{ flex: 1, backgroundColor: theme.white }}
         testID={`Screen_${scene.route.routeName}_${isActiveRoute ? 'IsActive' : 'IsNotActive'}`}
       >
+        <View style={{ height: paddingTop, backgroundColor: theme.primaryBlue }} />
         <View style={{ flexDirection: 'row', flex: 1 }}>
           {
               hasSplitPaneComponent && SplitPaneComponent &&
@@ -203,24 +289,59 @@ class CardStack extends React.Component<Props, State> {
     );
   }
 
-  _getTransitionConfig = (isAnimateFromBottom) => {
+  _getTransitionConfig = (isAnimateFromBottom, isFlipForward) => {
+    const { scenes, index } = this.props;
+    let customTransitionConfig = this.props.transitionConfig;
+    if (this.props.transitionConfig !== null) {
+      const customScreenInterpolator = this.props.transitionConfig && this.props.transitionConfig().screenInterpolator({ ...this.props });
+      // if the screen interpolator from this.props.transtionConfig is null then we want to set customTransitionConfig to null so the default will be used
+      if (customScreenInterpolator === null) {
+        customTransitionConfig = null;
+      }
+    }
     const isModal = this.props.mode === 'modal';
 
     return TransitionConfigs.getTransitionConfig(
-      this.props.transitionConfig,
+      customTransitionConfig,
       /* $FlowFixMe */
       {},
       /* $FlowFixMe */
       {},
       isModal || isAnimateFromBottom,
+      isFlipForward,
     );
   };
 
-  _renderCard = (scene: NavigationScene): React.Node => {
+  _renderCard = (scene: NavigationScene, {
+    shouldInvertScreen,
+    shouldHide,
+    isFlipping,
+  }): React.Node => {
 
-    const { screenInterpolator } = this._getTransitionConfig(scene.route.animateFromBottom);
-    const style =
-      screenInterpolator && screenInterpolator({ ...this.props, scene });
+    const { position } = this.props;
+
+    let style = {};
+
+    if (isFlipping) {
+      if (shouldInvertScreen) {
+        // TODO not sure if this is required, sometimes it gets out of sync, otherwise flip from page is misaligned
+        style = {
+          transform: [
+            { rotateY: '180deg' }
+          ],
+        }
+      } else if (shouldHide) {
+        // While flip from animation is in progress, don't show top screen as it's
+        // not yet it's turn
+        style = {
+          opacity: 0,
+        }
+      }
+    } else {
+      const { screenInterpolator } = this._getTransitionConfig(scene.route.animateFromBottom);
+      style = screenInterpolator && screenInterpolator({ ...this.props, scene });
+    }
+
 
     const SceneComponent = this.props.router.getComponentForRouteName(
       scene.route.routeName
@@ -230,7 +351,7 @@ class CardStack extends React.Component<Props, State> {
       <Card
         {...this.props}
         key={`card_${scene.key}`}
-        style={[style, this.props.cardStyle]}
+        style={[this.props.cardStyle, style]}
         scene={scene}
       >
         {this._renderInnerScene(SceneComponent, scene)}

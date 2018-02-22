@@ -1,6 +1,7 @@
 /* @flow */
 
 import * as React from 'react';
+import _ from 'lodash';
 
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
@@ -109,8 +110,13 @@ class Transitioner extends React.Component<Props, State> {
       return;
     }
 
+    const nextKey = _.last(nextProps.navigation.state.routes).key;
+    const thisKey = _.last(this.props.navigation.state.routes).key;
+    const hasKeyChanged = nextKey !== thisKey;
+    // const indexHasChanged = hasKeyChanged;
     const indexHasChanged =
       nextProps.navigation.state.index !== this.props.navigation.state.index;
+
     if (this._isTransitionRunning) {
       this._queuedTransition = { nextProps, nextScenes, indexHasChanged };
       return;
