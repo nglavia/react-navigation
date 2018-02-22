@@ -27,6 +27,8 @@ import type {
 const NativeAnimatedModule =
   NativeModules && NativeModules.NativeAnimatedModule;
 
+const FLIP_FORWARD = 'FLIP_FORWARD';
+
 type Props = {
   headerMode: HeaderMode,
   mode: 'card' | 'modal',
@@ -47,6 +49,11 @@ class CardStackTransitioner extends React.Component<Props> {
     mode: 'card',
   };
 
+  state = {
+    flipFrom: false,
+    flipTo: false,
+  }
+
   render() {
     const routes = this.props.navigation.state.routes;
     const currentScene = routes[routes.length - 1] || {};
@@ -61,6 +68,8 @@ class CardStackTransitioner extends React.Component<Props> {
       });
     }
 
+    const isFlipForward = currentScene.customTransition === FLIP_FORWARD;
+
     return (
       <Transitioner
         configureTransition={animation}
@@ -68,6 +77,25 @@ class CardStackTransitioner extends React.Component<Props> {
         render={this._render}
         onTransitionStart={this.props.onTransitionStart}
         onTransitionEnd={this.props.onTransitionEnd}
+        onFlipStart={() => {
+          this.setState({
+            isFlipFrom: true,
+            isFlipTo: false,
+          })
+        }}
+        onFlipFromComplete={() => {
+          this.setState({
+            isFlipFrom: false,
+            isFlipTo: true,
+          })
+        }}
+        onFlipToComplete={() => {
+          this.setState({
+            isFlipFrom: false,
+            isFlipTo: false,
+          })
+        }}
+        isFlipForward={isFlipForward}
       />
     );
   }
@@ -117,6 +145,10 @@ class CardStackTransitioner extends React.Component<Props> {
       cardStyle,
       transitionConfig,
     } = this.props;
+
+    const routes = this.props.navigation.state.routes;
+    const currentScene = routes[routes.length - 1] || {};
+    const isFlipForward = currentScene.customTransition === FLIP_FORWARD;
     return (
       <CardStack
         screenProps={screenProps}
@@ -138,6 +170,9 @@ class CardStackTransitioner extends React.Component<Props> {
         handleBackAction={this.props.handleBackAction}
         handleNavigate={this.props.handleNavigate}
         modals={this.props.modals}
+        isFlipForward={isFlipForward}
+        isFlipFrom={this.state.isFlipFrom}
+        isFlipTo={this.state.isFlipTo}
       />
     );
   };

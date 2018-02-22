@@ -46,37 +46,30 @@ const theme = {
 
 const FLIP_FORWARD = 'FLIP_FORWARD';
 
-const processFlipAnimation = (scene, scenes, state) => {
-  // When flipping, only render top screen when it's time to show
-  const isFlipForward = scene.route.customTransition === FLIP_FORWARD;
-
-  const isFlipFromAnimation = state.isAnimating && isFlipForward && state.isFirstHalf;
-  const isFlipToAnimation = state.isAnimating && isFlipForward && state.isSecondHalf;
-
+const processFlipAnimation = (scene, scenes, isFlipForward, isFlipFrom, isFlipTo) => {
   let nonPurgedScenes = scenes;
   let topVisibleScene = _.last(scenes);
 
   let isHideTopScene = false;
   if (isFlipForward) {
-    if (isFlipFromAnimation) {
-      // If flip from animation in progress, the top visible scene is actually the previous route
+    if (isFlipFrom) {
+      // If flip from animation in progress, the top visible scene is actually
+      // the previous route
       topVisibleScene = _.last(nonPurgedScenes.slice(0, -1));
       isHideTopScene = true;
-    } else if (isFlipToAnimation) {
+    } else if (isFlipTo) {
       // Don't draw stale scenes after flip completes, ran into issue where
       // portal blue on bottom would draw behind bottom of flip and looked
       // weird
       nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isStale);
     }
-    // Never draw purged scenes, stale routes are purged once animation completes
-    // TODO actually purge these from redux instead, after animation looks good
+    // Never draw purged scenes, stale routes are purged once animation
+    // completes TODO actually purge these from redux instead, after animation
+    // looks good
     nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isPurged);
   }
 
   return {
-    isFlipForward,
-    isFlipFromAnimation,
-    isFlipToAnimation,
     topVisibleScene,
     isHideTopScene,
     nonPurgedScenes,
@@ -118,13 +111,6 @@ class CardStack extends React.Component<Props, State> {
     };
     // (this: any)._trackState = this._trackState.bind(this);
     (this: any)._hasSplitPaneComponent = this._hasSplitPaneComponent.bind(this);
-    props.progress.addListener(({ value }) => {
-      this.setState({
-        isAnimating: value !== 0 && value !== 1,
-        isFirstHalf: value < 0.5,
-        isSecondHalf: value >= 0.5
-      })
-    });
   }
 
   componentWillReceiveProps(nextProps: Props) {
@@ -136,11 +122,6 @@ class CardStack extends React.Component<Props, State> {
 
     const topScene = _.last(this.props.scenes);
     const nextTopScene = _.last(nextProps.scenes);
-    if (topScene.key !== nextTopScene.key) {
-      this.setState({
-        isAnimating: true,
-      });
-    }
 
     nextProps.scenes.forEach((newScene: *) => {
       if (
@@ -176,16 +157,20 @@ class CardStack extends React.Component<Props, State> {
     let floatingHeader = null;
     const headerMode = this._getHeaderMode();
 
-    const { scene, scenes, position } = this.props;
+    const {
+      scene,
+      scenes,
+      position,
+      isFlipForward,
+      isFlipFrom,
+      isFlipTo
+    } = this.props;
 
     const {
-      isFlipForward,
-      isFlipFromAnimation,
-      isFlipToAnimation,
       topVisibleScene,
       isHideTopScene,
       nonPurgedScenes,
-    } = processFlipAnimation(scene, scenes, this.state);
+    } = processFlipAnimation(scene, scenes, isFlipForward, isFlipFrom, isFlipTo);
 
     if (headerMode === 'float') {
       floatingHeader = this._renderHeader(topVisibleScene, headerMode);
@@ -209,12 +194,10 @@ class CardStack extends React.Component<Props, State> {
             nonPurgedScenes.map((s: *, idx) => {
               const isTopScene = s.key === scene.key;
               const isTopVisibleScene = s.key === topVisibleScene.key;
-              const shouldInvertScreen = isTopVisibleScene && isFlipFromAnimation;
               const shouldHide = isHideTopScene && isTopScene;
               return this._renderCard(s, {
-                shouldInvertScreen,
                 shouldHide,
-                isFlipping: isFlipFromAnimation || isFlipToAnimation,
+                isFlipping: isFlipFrom || isFlipTo,
               })
             })
           }
@@ -313,35 +296,25 @@ class CardStack extends React.Component<Props, State> {
   };
 
   _renderCard = (scene: NavigationScene, {
-    shouldInvertScreen,
     shouldHide,
     isFlipping,
   }): React.Node => {
 
     const { position } = this.props;
 
-    let style = {};
-
+    let individualCardAnimation = {};
     if (isFlipping) {
-      if (shouldInvertScreen) {
-        // TODO not sure if this is required, sometimes it gets out of sync, otherwise flip from page is misaligned
-        style = {
-          transform: [
-            { rotateY: '180deg' }
-          ],
-        }
-      } else if (shouldHide) {
-        // While flip from animation is in progress, don't show top screen as it's
-        // not yet it's turn
-        style = {
+      if (shouldHide) {
+        // Don't display the topmost card while flip from animation is in
+        // progress
+        individualCardAnimation = {
           opacity: 0,
         }
       }
     } else {
       const { screenInterpolator } = this._getTransitionConfig(scene.route.animateFromBottom);
-      style = screenInterpolator && screenInterpolator({ ...this.props, scene });
+      individualCardAnimation = screenInterpolator && screenInterpolator({ ...this.props, scene });
     }
-
 
     const SceneComponent = this.props.router.getComponentForRouteName(
       scene.route.routeName
@@ -351,7 +324,7 @@ class CardStack extends React.Component<Props, State> {
       <Card
         {...this.props}
         key={`card_${scene.key}`}
-        style={[this.props.cardStyle, style]}
+        style={[this.props.cardStyle, individualCardAnimation]}
         scene={scene}
       >
         {this._renderInnerScene(SceneComponent, scene)}

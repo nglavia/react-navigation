@@ -161,21 +161,6 @@ class Transitioner extends React.Component<Props, State> {
     const toValue = nextProps.navigation.state.index;
     const positionHasChanged = position.__getValue() !== toValue;
 
-    // if swiped back, indexHasChanged == true && positionHasChanged == false
-    const animations =
-      indexHasChanged && positionHasChanged
-        ? [
-            timing(progress, {
-              ...transitionSpec,
-              toValue: 1,
-            }),
-            timing(position, {
-              ...transitionSpec,
-              toValue: nextProps.navigation.state.index,
-            }),
-          ]
-        : [];
-
     // update scenes and play the transition
     this._isTransitionRunning = true;
     this.setState(nextState, async () => {
@@ -189,7 +174,57 @@ class Transitioner extends React.Component<Props, State> {
           await result;
         }
       }
-      Animated.parallel(animations).start(this._onTransitionEnd);
+      if (this.props.isFlipForward) {
+        const flipFromAnimation = indexHasChanged && positionHasChanged
+            ? [
+                Animated.timing(progress, {
+                  ...transitionSpec,
+                  toValue: 0.5,
+                }),
+                Animated.timing(position, {
+                  ...transitionSpec,
+                  toValue: nextProps.navigation.state.index - 0.5,
+                }),
+              ]
+            : [];
+        const flipToAnimation = indexHasChanged && positionHasChanged
+            ? [
+                Animated.timing(progress, {
+                  ...transitionSpec,
+                  toValue: 1,
+                }),
+                Animated.timing(position, {
+                  ...transitionSpec,
+                  toValue: nextProps.navigation.state.index,
+                }),
+              ]
+            : [];
+        this.props.onFlipStart();
+        Animated.parallel(flipFromAnimation).start((callback) => {
+          this.props.onFlipFromComplete();
+          Animated.parallel(flipToAnimation).start((callback) => {
+            this.props.onFlipToComplete();
+            this._onTransitionEnd(callback)
+          });
+        });
+      } else {
+        // if swiped back, indexHasChanged == true && positionHasChanged == false
+        const animations =
+          indexHasChanged && positionHasChanged
+            ? [
+                timing(progress, {
+                  ...transitionSpec,
+                  toValue: 1,
+                }),
+                timing(position, {
+                  ...transitionSpec,
+                  toValue: nextProps.navigation.state.index,
+                }),
+              ]
+            : [];
+
+        Animated.parallel(animations).start(this._onTransitionEnd);
+      }
     });
   }
 
