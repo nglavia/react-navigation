@@ -106,13 +106,33 @@ class Transitioner extends React.Component<Props, State> {
       this.props.navigation.state
     );
 
+    console.log('Prop states: ', this.props.navigation.state);
+    console.log('NextProp states: ', nextProps.navigation.state);
+    console.log('State Scenes: ', this.state.scenes);
+    console.log('NextScenes: ', nextScenes);
+
     if (nextScenes === this.state.scenes) {
+      console.log('Equal states');
       return;
     }
 
+    console.log('key comparison');
     const nextKey = _.last(nextProps.navigation.state.routes).key;
     const thisKey = _.last(this.props.navigation.state.routes).key;
     const hasKeyChanged = nextKey !== thisKey;
+
+    // if (!hasKeyChanged) {
+    //   // TODO sync purged
+    //   // this.state.scenes = nextProps.navigation.state;
+    //   // console.log('Set state to: ', nextScenes);
+    //   // this.setState({
+    //   //   scenes: nextScenes
+    //   // })
+    //   return;
+    // }
+
+
+
     // const indexHasChanged = hasKeyChanged;
     const indexHasChanged =
       nextProps.navigation.state.index !== this.props.navigation.state.index;
@@ -208,6 +228,7 @@ class Transitioner extends React.Component<Props, State> {
           });
         });
       } else {
+        console.log('Regular transition');
         // if swiped back, indexHasChanged == true && positionHasChanged == false
         const animations =
           indexHasChanged && positionHasChanged
@@ -327,7 +348,7 @@ function buildTransitionProps(
 }
 
 function isSceneNotStale(scene: NavigationScene): boolean {
-  return !scene.isStale;
+  return !scene.isStale || !scene.route.isStale || !scene.route.isPurged;
 }
 
 function isSceneActive(scene: NavigationScene): boolean {
