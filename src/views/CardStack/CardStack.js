@@ -63,10 +63,6 @@ const processFlipAnimation = (scene, scenes, isFlipForward, isFlipFrom, isFlipTo
       // weird
       nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isStale);
     }
-    // Never draw purged scenes, stale routes are purged once animation
-    // completes TODO actually purge these from redux instead, after animation
-    // looks good
-    nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isPurged);
   }
 
   return {
@@ -171,6 +167,10 @@ class CardStack extends React.Component<Props, State> {
       isHideTopScene,
       nonPurgedScenes,
     } = processFlipAnimation(scene, scenes, isFlipForward, isFlipFrom, isFlipTo);
+    // Never draw purged scenes, stale routes are purged once animation
+    // completes TODO actually purge these from redux instead, after animation
+    // looks good
+    nonPurgedScenes = nonPurgedScenes.filter(scene => !scene.route.isPurged);
 
     if (headerMode === 'float') {
       floatingHeader = this._renderHeader(topVisibleScene, headerMode);
