@@ -5,6 +5,7 @@ import {
   Animated,
   NativeModules
 } from 'react-native';
+import _ from 'lodash';
 
 import CardStack from './CardStack';
 import CardStackStyleInterpolator from './CardStackStyleInterpolator';
@@ -28,6 +29,9 @@ const NativeAnimatedModule =
   NativeModules && NativeModules.NativeAnimatedModule;
 
 const FLIP_FORWARD = 'FLIP_FORWARD';
+const FLIP_BACKWARD = 'FLIP_BACKWARD';
+
+const isFlipTransition = (route) => !route.hasTransitionCompleted && (route.customTransition === FLIP_FORWARD || route.customTransition === FLIP_BACKWARD);
 
 type Props = {
   headerMode: HeaderMode,
@@ -56,7 +60,8 @@ class CardStackTransitioner extends React.Component<Props> {
 
   render() {
     const routes = this.props.navigation.state.routes;
-    const currentScene = routes[routes.length - 1] || {};
+    // const currentScene = routes[routes.length - 1] || {};
+    const currentScene = _.last(routes);
     const previousScene = routes[routes.length - 2] || {};
     const splitPaneToSplitPaneNav = this.props.isMultiPaneEligible
       && currentScene.leftSplitPaneComponent && previousScene.leftSplitPaneComponent;
@@ -68,7 +73,6 @@ class CardStackTransitioner extends React.Component<Props> {
       });
     }
 
-    const isFlipForward = currentScene.customTransition === FLIP_FORWARD;
 
     return (
       <Transitioner
@@ -95,7 +99,7 @@ class CardStackTransitioner extends React.Component<Props> {
             isFlipTo: false,
           })
         }}
-        isFlipForward={isFlipForward}
+        isFlipTransition={isFlipTransition(currentScene)}
       />
     );
   }
@@ -147,8 +151,8 @@ class CardStackTransitioner extends React.Component<Props> {
     } = this.props;
 
     const routes = this.props.navigation.state.routes;
-    const currentScene = routes[routes.length - 1] || {};
-    const isFlipForward = currentScene.customTransition === FLIP_FORWARD;
+    // const currentScene = routes[routes.length - 1] || {};
+    const currentScene = _.last(routes);
     return (
       <CardStack
         screenProps={screenProps}
@@ -170,7 +174,7 @@ class CardStackTransitioner extends React.Component<Props> {
         handleBackAction={this.props.handleBackAction}
         handleNavigate={this.props.handleNavigate}
         modals={this.props.modals}
-        isFlipForward={isFlipForward}
+        isFlipTransition={isFlipTransition(currentScene)}
         isFlipFrom={this.state.isFlipFrom}
         isFlipTo={this.state.isFlipTo}
       />

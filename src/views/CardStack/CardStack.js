@@ -44,14 +44,12 @@ const theme = {
   primaryBlue: '#0074B4',
 }
 
-const FLIP_FORWARD = 'FLIP_FORWARD';
-
-const processFlipAnimation = (scene, scenes, isFlipForward, isFlipFrom, isFlipTo) => {
+const processFlipAnimation = (scene, scenes, isFlipTransition, isFlipFrom, isFlipTo) => {
   let nonPurgedScenes = scenes;
   let topVisibleScene = _.last(scenes);
 
   let isHideTopScene = false;
-  if (isFlipForward) {
+  if (isFlipTransition) {
     if (isFlipFrom) {
       // If flip from animation in progress, the top visible scene is actually
       // the previous route
@@ -157,7 +155,7 @@ class CardStack extends React.Component<Props, State> {
       scene,
       scenes,
       position,
-      isFlipForward,
+      isFlipTransition,
       isFlipFrom,
       isFlipTo
     } = this.props;
@@ -183,7 +181,7 @@ class CardStack extends React.Component<Props, State> {
 
     const { screenInterpolator } = this._getTransitionConfig(topVisibleScene.route.animateFromBottom);
     let flipAnimationStyle = {};
-    if (isFlipForward) {
+    if (isFlipTransition) {
       flipAnimationStyle = screenInterpolator && screenInterpolator({ ...this.props });
     }
 
@@ -272,7 +270,7 @@ class CardStack extends React.Component<Props, State> {
     );
   }
 
-  _getTransitionConfig = (isAnimateFromBottom, isFlipForward) => {
+  _getTransitionConfig = (isAnimateFromBottom, isFlipTransition) => {
     const { scenes, index } = this.props;
     let customTransitionConfig = this.props.transitionConfig;
     if (this.props.transitionConfig !== null) {
@@ -291,7 +289,7 @@ class CardStack extends React.Component<Props, State> {
       /* $FlowFixMe */
       {},
       isModal || isAnimateFromBottom,
-      isFlipForward,
+      isFlipTransition,
     );
   };
 

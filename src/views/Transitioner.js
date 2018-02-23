@@ -174,7 +174,7 @@ class Transitioner extends React.Component<Props, State> {
           await result;
         }
       }
-      if (this.props.isFlipForward) {
+      if (this.props.isFlipTransition) {
         const flipFromAnimation = indexHasChanged && positionHasChanged
             ? [
                 Animated.timing(progress, {
