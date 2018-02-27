@@ -29,6 +29,9 @@ type Props = {
     transitionProps: NavigationTransitionProps,
     prevTransitionProps: ?NavigationTransitionProps
   ) => React.Node,
+  onFlipStart: Function,
+  onFlipFromComplete: Function,
+  onFlipToComplete: Function,
 };
 
 type State = {
@@ -155,21 +158,6 @@ class Transitioner extends React.Component<Props, State> {
     const toValue = nextProps.navigation.state.index;
     const positionHasChanged = position.__getValue() !== toValue;
 
-    // if swiped back, indexHasChanged == true && positionHasChanged == false
-    const animations =
-      indexHasChanged && positionHasChanged
-        ? [
-            timing(progress, {
-              ...transitionSpec,
-              toValue: 1,
-            }),
-            timing(position, {
-              ...transitionSpec,
-              toValue: nextProps.navigation.state.index,
-            }),
-          ]
-        : [];
-
     // update scenes and play the transition
     this._isTransitionRunning = true;
     this.setState(nextState, async () => {
@@ -183,7 +171,42 @@ class Transitioner extends React.Component<Props, State> {
           await result;
         }
       }
-      Animated.parallel(animations).start(this._onTransitionEnd);
+      if (this.props.isFlipTransition) {
+        const { flipFromAnimation, flipToAnimation } = getFlipAnimations(
+          indexHasChanged,
+          positionHasChanged,
+          progress,
+          position,
+          nextProps,
+          transitionSpec
+        );
+        this.props.onFlipStart();
+        Animated.parallel(flipFromAnimation).start(callback => {
+          // Split into two animations solely so we can get this callback half
+          // way through.  We use it so that during first half of flip, we don't
+          // draw the topmost screen, but after the halfway point we render it
+          // as normal.  In this way it looks like it appears after the halfway
+          // point of the flip
+          this.props.onFlipFromComplete();
+          Animated.parallel(flipToAnimation).start(callback => {
+            this.props.onFlipToComplete();
+            this._onTransitionEnd();
+          });
+        });
+      } else {
+        // if swiped back, indexHasChanged == true && positionHasChanged == false
+        const animations = getRegularAnimation(
+          indexHasChanged,
+          positionHasChanged,
+          progress,
+          position,
+          nextProps,
+          transitionSpec,
+          timing
+        );
+
+        Animated.parallel(animations).start(this._onTransitionEnd);
+      }
     });
   }
 
@@ -291,6 +314,70 @@ function isSceneNotStale(scene: NavigationScene): boolean {
 
 function isSceneActive(scene: NavigationScene): boolean {
   return scene.isActive;
+}
+
+function getRegularAnimation(
+  indexHasChanged,
+  positionHasChanged,
+  progress,
+  position,
+  nextProps,
+  transitionSpec,
+  timing
+) {
+  return indexHasChanged && positionHasChanged
+    ? [
+        timing(progress, {
+          ...transitionSpec,
+          toValue: 1,
+        }),
+        timing(position, {
+          ...transitionSpec,
+          toValue: nextProps.navigation.state.index,
+        }),
+      ]
+    : [];
+}
+
+function getFlipAnimations(
+  indexHasChanged,
+  positionHasChanged,
+  progress,
+  position,
+  nextProps,
+  transitionSpec
+) {
+  const flipFromAnimation =
+    indexHasChanged && positionHasChanged
+      ? [
+          Animated.timing(progress, {
+            ...transitionSpec,
+            toValue: 0.5,
+          }),
+          Animated.timing(position, {
+            ...transitionSpec,
+            toValue: nextProps.navigation.state.index - 0.5,
+          }),
+        ]
+      : [];
+  const flipToAnimation =
+    indexHasChanged && positionHasChanged
+      ? [
+          Animated.timing(progress, {
+            ...transitionSpec,
+            toValue: 1,
+          }),
+          Animated.timing(position, {
+            ...transitionSpec,
+            toValue: nextProps.navigation.state.index,
+          }),
+        ]
+      : [];
+
+  return {
+    flipFromAnimation,
+    flipToAnimation,
+  };
 }
 
 const styles = StyleSheet.create({
