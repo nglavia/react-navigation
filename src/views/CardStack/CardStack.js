@@ -40,7 +40,7 @@ const emptyFunction = () => {};
 const theme = {
   white: '#FFFFFF',
   lightGrey: '#B7B7B7',
-}
+};
 
 type Props = {
   headerMode: HeaderMode,
@@ -61,11 +61,10 @@ type Props = {
 };
 
 type State = {
-  headerHeight: number
-}
+  headerHeight: number,
+};
 
 class CardStack extends React.Component<Props, State> {
-
   _screenDetails: {
     [key: string]: ?NavigationScreenDetails<NavigationStackScreenOptions>,
   } = {};
@@ -97,12 +96,17 @@ class CardStack extends React.Component<Props, State> {
   }
 
   _hasSplitPaneComponent(scene) {
-    return this.props.isMultiPaneEligible === true && scene.route.leftSplitPaneComponent != null;
+    return (
+      this.props.isMultiPaneEligible === true &&
+      scene.route.leftSplitPaneComponent != null
+    );
   }
 
   _renderHeader(scene: NavigationScene, headerMode: HeaderMode): ?React.Node {
     // Caribou Start
-    const accessibilityOption = this.props.hasModal ? 'no-hide-descendants' : 'yes';
+    const accessibilityOption = this.props.hasModal
+      ? 'no-hide-descendants'
+      : 'yes';
     return (
       // $FlowFixMeRN0.51.1
       <this.props.headerComponent
@@ -158,22 +162,31 @@ class CardStack extends React.Component<Props, State> {
     const SplitPaneComponent = route.leftSplitPaneComponent;
     const hasSplitPaneComponent = this._hasSplitPaneComponent(scene);
 
-    const paddingTop = route.hideNavBar || route.noNavBar ? 0 : this.state.headerHeight;
+    const paddingTop =
+      route.hideNavBar || route.noNavBar ? 0 : this.state.headerHeight;
     const isActiveRoute = scene.isActive && !this.props.hasModal;
 
     return (
-      <View style={{ flex: 1, paddingTop, backgroundColor: theme.white }}
-        testID={`Screen_${scene.route.routeName}_${isActiveRoute ? 'IsActive' : 'IsNotActive'}`}
+      <View
+        style={{ flex: 1, paddingTop, backgroundColor: theme.white }}
+        testID={`Screen_${scene.route.routeName}_${isActiveRoute
+          ? 'IsActive'
+          : 'IsNotActive'}`}
       >
         <View style={{ flexDirection: 'row', flex: 1 }}>
-          {
-              hasSplitPaneComponent && SplitPaneComponent &&
-              <View style={{ width: 300, borderRightWidth: 1, borderColor: theme.lightGrey }}>
+          {hasSplitPaneComponent &&
+            SplitPaneComponent && (
+              <View
+                style={{
+                  width: 300,
+                  borderRightWidth: 1,
+                  borderColor: theme.lightGrey,
+                }}
+              >
                 <CardSceneView
                   key={`SPLIT_PANE${route.key}`}
                   routeProps={scene.route}
                   component={SplitPaneComponent}
-
                   scene={scene}
                   handleNavigate={this.props.handleNavigate}
                   handleBack={this.props.handleBackAction}
@@ -182,7 +195,7 @@ class CardStack extends React.Component<Props, State> {
                   isLeftSplitPaneComponent
                 />
               </View>
-          }
+            )}
           <View style={{ flex: 1 }}>
             <CardSceneView
               {...route}
@@ -202,7 +215,7 @@ class CardStack extends React.Component<Props, State> {
     );
   }
 
-  _getTransitionConfig = (isAnimateFromBottom) => {
+  _getTransitionConfig = isAnimateFromBottom => {
     const isModal = this.props.mode === 'modal';
 
     return TransitionConfigs.getTransitionConfig(
@@ -211,13 +224,14 @@ class CardStack extends React.Component<Props, State> {
       {},
       /* $FlowFixMe */
       {},
-      isModal || isAnimateFromBottom,
+      isModal || isAnimateFromBottom
     );
   };
 
   _renderCard = (scene: NavigationScene): React.Node => {
-
-    const { screenInterpolator } = this._getTransitionConfig(scene.route.animateFromBottom);
+    const { screenInterpolator } = this._getTransitionConfig(
+      scene.route.animateFromBottom
+    );
     const style =
       screenInterpolator && screenInterpolator({ ...this.props, scene });
 

@@ -1,10 +1,7 @@
 /* @flow */
 
 import * as React from 'react';
-import {
-  Animated,
-  NativeModules
-} from 'react-native';
+import { Animated, NativeModules } from 'react-native';
 
 import CardStack from './CardStack';
 import CardStackStyleInterpolator from './CardStackStyleInterpolator';
@@ -51,8 +48,10 @@ class CardStackTransitioner extends React.Component<Props> {
     const routes = this.props.navigation.state.routes;
     const currentScene = routes[routes.length - 1] || {};
     const previousScene = routes[routes.length - 2] || {};
-    const splitPaneToSplitPaneNav = this.props.isMultiPaneEligible
-      && currentScene.leftSplitPaneComponent && previousScene.leftSplitPaneComponent;
+    const splitPaneToSplitPaneNav =
+      this.props.isMultiPaneEligible &&
+      currentScene.leftSplitPaneComponent &&
+      previousScene.leftSplitPaneComponent;
     let animation = this._configureTransition;
     if (splitPaneToSplitPaneNav) {
       animation = () => ({
