@@ -60,7 +60,7 @@ type Props = {
   scenes: Array<NavigationScene>,
   scene: NavigationScene,
   index: number,
-  position: number,
+  position: Object, // AnimatedValue
   // True if FLIP_FORWARD or FLIP_BACKWARD and in progress
   isFlipTransition: boolean,
   // True during first half of a flip
@@ -68,7 +68,6 @@ type Props = {
   // True during second half of a flip
   isFlipTo: boolean,
   // True when animation is in progress
-  isTransitioning: boolean,
   statusBarSize: number,
   openDrawer: Function,
   handleBackAction: Function,
@@ -145,7 +144,6 @@ class CardStack extends React.Component<Props, State> {
       isFlipTransition,
       isFlipFrom,
       isFlipTo,
-      isTransitioning,
     } = this.props;
 
     const {
@@ -186,7 +184,6 @@ class CardStack extends React.Component<Props, State> {
             const isTopVisibleScene = s.key === topVisibleScene.key;
             const shouldHide = isHideTopScene && isTopScene;
             return this._renderCard(s, {
-              isTransitioning,
               isFlipTransition,
               shouldHide,
             });
