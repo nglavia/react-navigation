@@ -272,7 +272,7 @@ class CardStack extends React.Component<Props, State> {
     );
   }
 
-  _getTransitionConfig = isAnimateFromBottom => {
+  _getTransitionConfig = (isAnimateFromBottom, isFlipTransition) => {
     const isModal = this.props.mode === 'modal';
 
     return TransitionConfigs.getTransitionConfig(
@@ -281,16 +281,34 @@ class CardStack extends React.Component<Props, State> {
       {},
       /* $FlowFixMe */
       {},
-      isModal || isAnimateFromBottom
+      isModal || isAnimateFromBottom,
+      isFlipTransition
     );
   };
 
-  _renderCard = (scene: NavigationScene): React.Node => {
-    const { screenInterpolator } = this._getTransitionConfig(
-      scene.route.animateFromBottom
-    );
-    const style =
-      screenInterpolator && screenInterpolator({ ...this.props, scene });
+  _renderCard = (
+    scene: NavigationScene,
+    { isFlipTransition, shouldHide }
+  ): React.Node => {
+    const { position } = this.props;
+
+    let individualCardAnimation = null;
+    if (isFlipTransition) {
+      if (shouldHide) {
+        // Hide topmost card for first half of flip transition
+        individualCardAnimation = {
+          opacity: 0,
+        };
+      }
+    } else {
+      // Only apply BAU transitioning style as a non-flip
+      // Quirky behavior seen when incorrectly applied where touchables don't respond
+      const { screenInterpolator } = this._getTransitionConfig(
+        scene.route.animateFromBottom
+      );
+      individualCardAnimation =
+        screenInterpolator && screenInterpolator({ ...this.props, scene });
+    }
 
     const SceneComponent = this.props.router.getComponentForRouteName(
       scene.route.routeName
@@ -300,7 +318,7 @@ class CardStack extends React.Component<Props, State> {
       <Card
         {...this.props}
         key={`card_${scene.key}`}
-        style={[style, this.props.cardStyle]}
+        style={[this.props.cardStyle, individualCardAnimation]}
         scene={scene}
       >
         {this._renderInnerScene(SceneComponent, scene)}
