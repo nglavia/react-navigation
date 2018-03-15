@@ -30,6 +30,9 @@ type Props = {
     transitionProps: NavigationTransitionProps,
     prevTransitionProps: ?NavigationTransitionProps
   ) => React.Node,
+  onFlipStart: Function,
+  onFlipFromComplete: Function,
+  onFlipToComplete: Function,
 };
 
 type State = {
@@ -159,16 +162,16 @@ class Transitioner extends React.Component<Props, State> {
     // update scenes and play the transition
     this._isTransitionRunning = true;
     this.setState(nextState, async () => {
-      // if (nextProps.onTransitionStart) {
-      //   const result = nextProps.onTransitionStart(
-      //     this._transitionProps,
-      //     this._prevTransitionProps
-      //   );
-      //
-      //   if (result instanceof Promise) {
-      //     await result;
-      //   }
-      // }
+      if (nextProps.onTransitionStart) {
+        const result = nextProps.onTransitionStart(
+          this._transitionProps,
+          this._prevTransitionProps
+        );
+
+        if (result instanceof Promise) {
+          await result;
+        }
+      }
       if (this.props.isFlipTransition) {
         const { flipFromAnimation, flipToAnimation } = getFlipAnimations(
           indexHasChanged,
@@ -273,8 +276,7 @@ class Transitioner extends React.Component<Props, State> {
         this._startTransition(
           this._queuedTransition.nextProps,
           this._queuedTransition.nextScenes,
-          this._queuedTransition.indexHasChanged,
-          this._queuedTransition.keyHasChanged
+          this._queuedTransition.indexHasChanged
         );
         this._queuedTransition = null;
       } else {
