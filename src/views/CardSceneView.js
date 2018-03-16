@@ -19,7 +19,6 @@ type Props = {
 };
 
 export default class SceneView extends React.PureComponent<Props> {
-
   constructor(props: DFSCardNavigatorProps) {
     super(props);
     (this: any)._trackState = this._trackState.bind(this);
@@ -27,12 +26,13 @@ export default class SceneView extends React.PureComponent<Props> {
 
   _trackState(route, data) {
     if (!route.trackingPageName) {
-      console.warn(`Attribute \`trackingPageName\` not defined in routes for ${route.routeName}`);
+      console.warn(
+        `Attribute \`trackingPageName\` not defined in routes for ${route.routeName}`
+      );
     } else {
       this.props.trackingActions.trackState(route.trackingPageName, data);
     }
   }
-
 
   render() {
     const { routeProps, component: Component, scene } = this.props;
@@ -41,7 +41,6 @@ export default class SceneView extends React.PureComponent<Props> {
       <Component
         {...routeProps}
         key={scene.key}
-
         // routeKey used for ScreenFocusAware
         routeKey={scene.route.key}
         handleNavigate={this.props.handleNavigate}
@@ -50,7 +49,7 @@ export default class SceneView extends React.PureComponent<Props> {
         isLeftSplitPaneComponent={this.props.isLeftSplitPaneComponent}
         isActiveRoute={isActiveRoute}
         isTopScreen={scene.isActive}
-        />
-    )
+      />
+    );
   }
 }
