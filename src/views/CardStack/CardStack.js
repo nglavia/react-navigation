@@ -250,6 +250,8 @@ class CardStack extends React.Component<Props, State> {
                   width: 300,
                   borderRightWidth: 1,
                   borderColor: theme.lightGrey,
+                  overflow: 'visible',
+                  zIndex: 1,
                 }}
               >
                 <CardSceneView
