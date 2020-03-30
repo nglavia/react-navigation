@@ -1,7 +1,7 @@
 /* eslint-disable react/sort-comp */
 
 import React from 'react';
-import { Linking, Platform, BackHandler } from 'react-native';
+import { Linking, Platform, BackHandler, View } from 'react-native';
 import {
   NavigationActions,
   ThemeProvider,
@@ -11,8 +11,13 @@ import {
 } from '@react-navigation/core';
 import invariant from './utils/invariant';
 import docsUrl from './utils/docsUrl';
+import _ from 'lodash';
 
 const { urlToPathAndParams } = pathUtils;
+
+const theme = {
+  lightGrey: '#B7B7B7',
+};
 
 function isStateful(props) {
   return !props.navigation;
@@ -133,6 +138,10 @@ export default function createNavigationContainer(Component) {
             ? Component.router.getStateForAction(this._initialAction)
             : null,
       };
+
+      (this: any)._hasSplitPaneComponent = this._hasSplitPaneComponent.bind(
+        this
+      );
     }
 
     _renderLoading() {
@@ -143,6 +152,12 @@ export default function createNavigationContainer(Component) {
 
     _isStateful() {
       return isStateful(this.props);
+    }
+    _hasSplitPaneComponent(scene) {
+      return (
+        this.props.isMultiPaneEligible === true &&
+        scene.leftSplitPaneComponent != null
+      );
     }
 
     _handleOpenURL = ({ url }) => {
@@ -389,7 +404,14 @@ export default function createNavigationContainer(Component) {
       return false;
     };
 
-    _getScreenProps = () => this.props.screenProps;
+    _getScreenProps = () => {
+      const passedProps = _.omit({ ...this.props }, 'scene');
+      this.props = {
+        ...passedProps,
+        ...this.props.scene,
+      };
+      return this.props;
+    };
 
     _getTheme = () => {
       if (this.props.theme === 'light' || this.props.theme === 'dark') {
@@ -406,6 +428,14 @@ export default function createNavigationContainer(Component) {
 
     render() {
       let navigation = this.props.navigation;
+      const SplitPaneComponent =
+        this.props.scene && this.props.scene.leftSplitPaneComponent;
+      const hasSplitPaneComponent = this._hasSplitPaneComponent(
+        this.props.scene
+      );
+      const accessibilityOption = this.props.hasModal
+        ? 'no-hide-descendants'
+        : 'yes';
       if (this._isStateful()) {
         const navState = this.state.nav;
         if (!navState) {
@@ -428,7 +458,29 @@ export default function createNavigationContainer(Component) {
       return (
         <ThemeProvider value={this._getTheme()}>
           <NavigationProvider value={navigation}>
-            <Component {...this.props} navigation={navigation} />
+            <this.props.headerComponent
+              {...this.props}
+              onNavigateBack={this.props.handleBack}
+              accessibilityOption={accessibilityOption}
+            />
+            <View style={{ flexDirection: 'row', flex: 1 }}>
+              {hasSplitPaneComponent && (
+                <View
+                  style={{
+                    width: 300,
+                    borderRightWidth: 1,
+                    borderColor: theme.lightGrey,
+                    overflow: 'visible',
+                    zIndex: 1,
+                  }}
+                >
+                  <SplitPaneComponent {...this.props} navigation={navigation} />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Component {...this.props} navigation={navigation} />
+              </View>
+            </View>
           </NavigationProvider>
         </ThemeProvider>
       );
