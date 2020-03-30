@@ -436,6 +436,8 @@ export default function createNavigationContainer(Component) {
       const accessibilityOption = this.props.hasModal
         ? 'no-hide-descendants'
         : 'yes';
+      const isAccessible =
+      this.props.isTopScreen && (_.size(this.props.modals) === 0 || this.props.modals === undefined);
       if (this._isStateful()) {
         const navState = this.state.nav;
         if (!navState) {
@@ -477,7 +479,7 @@ export default function createNavigationContainer(Component) {
                   <SplitPaneComponent {...this.props} navigation={navigation} />
                 </View>
               )}
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }} importantForAccessibility={isAccessible ? 'yes' : 'no-hide-descendants'}>
                 <Component {...this.props} navigation={navigation} />
               </View>
             </View>
