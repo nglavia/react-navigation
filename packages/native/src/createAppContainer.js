@@ -433,11 +433,10 @@ export default function createNavigationContainer(Component) {
       const hasSplitPaneComponent = this._hasSplitPaneComponent(
         this.props.scene
       );
-      const accessibilityOption = this.props.hasModal
-        ? 'no-hide-descendants'
-        : 'yes';
       const isAccessible =
-      this.props.isTopScreen && (_.size(this.props.modals) === 0 || this.props.modals === undefined);
+        this.props.isTopScreen &&
+        (_.size(this.props.modals) === 0 || this.props.modals === undefined);
+
       if (this._isStateful()) {
         const navState = this.state.nav;
         if (!navState) {
@@ -456,15 +455,9 @@ export default function createNavigationContainer(Component) {
         navigation = this._navigation;
       }
       invariant(navigation, 'failed to get navigation');
-
       return (
         <ThemeProvider value={this._getTheme()}>
           <NavigationProvider value={navigation}>
-            <this.props.headerComponent
-              {...this.props}
-              onNavigateBack={this.props.handleBack}
-              accessibilityOption={accessibilityOption}
-            />
             <View style={{ flexDirection: 'row', flex: 1 }}>
               {hasSplitPaneComponent && (
                 <View
@@ -479,7 +472,12 @@ export default function createNavigationContainer(Component) {
                   <SplitPaneComponent {...this.props} navigation={navigation} />
                 </View>
               )}
-              <View style={{ flex: 1 }} importantForAccessibility={isAccessible ? 'yes' : 'no-hide-descendants'}>
+              <View
+                style={{ flex: 1 }}
+                importantForAccessibility={
+                  isAccessible ? 'yes' : 'no-hide-descendants'
+                }
+              >
                 <Component {...this.props} navigation={navigation} />
               </View>
             </View>
