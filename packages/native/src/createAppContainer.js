@@ -438,7 +438,7 @@ export default function createNavigationContainer(Component) {
         (_.size(this.props.modals) === 0 || this.props.modals === undefined);
 
       if (this._isStateful()) {
-        const navState = this.state.nav;
+        const navState = this.props.navState;
         if (!navState) {
           return this._renderLoading();
         }
@@ -446,7 +446,7 @@ export default function createNavigationContainer(Component) {
           this._navigation = getNavigation(
             Component.router,
             navState,
-            this.dispatch,
+            this.props.dispatch,
             this._actionEventSubscribers,
             this._getScreenProps,
             () => this._navigation
